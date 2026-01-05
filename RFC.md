@@ -12,7 +12,7 @@ Last Updated: 2026-01-05
 
 
 
-1\. Abstract
+## 1\. Abstract
 
 
 
@@ -24,7 +24,7 @@ The MCP Server SDK provides a stable, enterprise-oriented contract between agent
 
 
 
-2\. Motivation
+## 2\. Motivation
 
 
 
@@ -74,7 +74,7 @@ Execution control
 
 
 
-3\. Goals
+## 3\. Goals
 
 
 
@@ -106,7 +106,7 @@ Remain model- and framework-neutral
 
 
 
-4\. Non-Goals
+## 4\. Non-Goals
 
 
 
@@ -142,7 +142,7 @@ These concerns are intentionally out of scope.
 
 
 
-5\. Terminology
+## 5\. Terminology
 
 Term	Definition
 
@@ -156,65 +156,48 @@ Policy	A decision rule allowing or denying execution
 
 Execution	A single tool invocation lifecycle
 
-6\. Architecture Overview
+## 6\. Architecture Overview
 
 Agent (any model / framework)
 
-&nbsp;       ↓
-
-&nbsp;  MCP Client
-
-&nbsp;       ↓
-
-&nbsp;┌────────────────────────┐
-
-&nbsp;│   MCP Server (SDK)     │
-
-&nbsp;│ ─ Tool Registry        │
-
-&nbsp;│ ─ Schema Validation    │
-
-&nbsp;│ ─ Policy Engine        │
-
-&nbsp;│ ─ Execution Hooks      │
-
-&nbsp;│ ─ Transport Adapter    │
-
-&nbsp;└────────────────────────┘
-
-&nbsp;       ↓
-
-&nbsp;  Backend Systems
-
-
-
+```text
+        ↓
+   MCP Client
+        ↓
+┌────────────────────────┐
+│   MCP Server (SDK)     │
+│ ─ Tool Registry        │
+│ ─ Schema Validation    │
+│ ─ Policy Engine        │
+│ ─ Execution Hooks      │
+│ ─ Transport Adapter    │
+└────────────────────────┘
+        ↓
+   Backend Systems
+```
 
 
 The MCP Server owns tool exposure, validation, and control, not agent behavior.
 
 
 
-7\. Core Abstraction: McpServer
+## 7\. Core Abstraction: McpServer
 
 Construction
 
+```python
 McpServer(
-
-&nbsp;   \*,
-
-&nbsp;   name: str,
-
-&nbsp;   version: str,
-
-&nbsp;   transport: str = "http",
-
-&nbsp;   description: str | None = None,
-
+  \*,
+name: str,
+version: str,
+transport: str = "http",
+description: str | None = None,
 )
+```
 
 
 
-Responsibilities
+### Responsibilities
 
 
 
@@ -246,27 +229,24 @@ The server must not depend on global state.
 
 
 
-8\. Tool Definition
+## 8\. Tool Definition
 
 Tool Decorator
 
+```python
 @tool(
-
-&nbsp;   \*,
-
-&nbsp;   name: str,
-
-&nbsp;   description: str | None = None,
-
-&nbsp;   timeout\_ms: int = 1000,
-
-&nbsp;   idempotent: bool = True,
-
+    *,
+    name: str,
+    description: str | None = None,
+    timeout_ms: int = 1000,
+    idempotent: bool = True,
 )
+```
 
 
 
-Requirements
+
+### Requirements
 
 
 
@@ -282,31 +262,25 @@ Tools MUST be synchronous in v1.0
 
 
 
-Example
+### Example
 
+```python
 class CustomerRequest(BaseModel):
-
-&nbsp;   customer\_id: str
-
+    customer_id: str
 
 
 class CustomerResponse(BaseModel):
-
-&nbsp;   customer\_id: str
-
-&nbsp;   status: str
+    customer_id: str
+    status: str
 
 
-
-@tool(name="get\_customer")
-
-def get\_customer(req: CustomerRequest) -> CustomerResponse:
-
-&nbsp;   ...
+@tool(name="get_customer")
+def get_customer(req: CustomerRequest) -> CustomerResponse:
+    ...
+```
 
 
-
-9\. Tool Metadata
+## 9\. Tool Metadata
 
 
 
@@ -314,19 +288,15 @@ Each registered tool produces immutable metadata:
 
 
 
+```python
 class ToolMetadata(BaseModel):
-
-&nbsp;   name: str
-
-&nbsp;   description: str | None
-
-&nbsp;   input\_schema: dict
-
-&nbsp;   output\_schema: dict
-
-&nbsp;   timeout\_ms: int
-
-&nbsp;   idempotent: bool
+    name: str
+    description: str | None
+    input_schema: dict
+    output_schema: dict
+    timeout_ms: int
+    idempotent: bool
+```
 
 
 
@@ -336,23 +306,22 @@ This metadata is returned via capability discovery.
 
 
 
-10\. Agent Context
+## 10\. Agent Context
 
 Definition
 
+```python
 class AgentContext:
-
-&nbsp;   agent\_id: str
-
-&nbsp;   model: str | None
-
-&nbsp;   request\_id: str
-
-&nbsp;   metadata: dict\[str, str]
+    agent_id: str
+    model: str | None
+    request_id: str
+    metadata: dict[str, str]
+```
 
 
 
-Injection Rule
+
+### Injection Rule
 
 
 
@@ -364,9 +333,9 @@ Tools MUST NOT read transport headers or raw requests directly.
 
 
 
-11\. Policy Engine
+## 11\. Policy Engine
 
-Policy Decision
+### Policy Decision
 
 PolicyDecision.allow()
 
@@ -374,13 +343,13 @@ PolicyDecision.deny(reason: str)
 
 
 
-Policy Hook Signature
+### Policy Hook Signature
 
 (AgentContext, tool\_name: str, args: dict) -> PolicyDecision
 
 
 
-Semantics
+### Semantics
 
 
 
@@ -396,9 +365,9 @@ First denial short-circuits execution
 
 
 
-12\. Execution Lifecycle Hooks
+## 12\. Execution Lifecycle Hooks
 
-Hook Points
+### Hook Points
 
 
 
@@ -414,7 +383,7 @@ on\_execute\_error
 
 
 
-Guarantees
+### Guarantees
 
 
 
@@ -434,9 +403,9 @@ These hooks enable logging, tracing, auditing, and metrics.
 
 
 
-13\. Wire Protocol
+## 13\. Wire Protocol
 
-Capability Discovery
+### Capability Discovery
 
 GET /mcp/capabilities
 
@@ -444,23 +413,21 @@ GET /mcp/capabilities
 
 
 
-Response:
+### Response:
 
 
 
+```json
 {
-
-&nbsp; "server": "customer-mcp",
-
-&nbsp; "version": "1.0.0",
-
-&nbsp; "tools": \[...]
-
+  "server": "customer-mcp",
+  "version": "1.0.0",
+  "tools": [...]
 }
+```
 
 
 
-Tool Execution
+### Tool Execution
 
 POST /mcp/execute
 
@@ -468,35 +435,35 @@ POST /mcp/execute
 
 
 
-Request:
+### Request:
 
 
 
+```json
 {
-
-&nbsp; "tool": "get\_customer",
-
-&nbsp; "arguments": {...}
-
+  "tool": "get_customer",
+  "arguments": {
+    ...
+  }
 }
+```
 
 
 
-14\. Error Model
+## 14\. Error Model
 
-Error Shape
+### Error Shape
 
+```json
 {
-
-&nbsp; "error": "POLICY\_DENIED",
-
-&nbsp; "message": "Blocked in prod"
-
+  "error": "POLICY_DENIED",
+  "message": "Blocked in prod"
 }
+```
 
 
 
-Reserved Error Codes
+### Reserved Error Codes
 
 
 
@@ -520,7 +487,7 @@ TIMEOUT
 
 
 
-15\. Transport
+## 15\. Transport
 
 
 
@@ -544,7 +511,7 @@ Transport choice must not affect semantics.
 
 
 
-16\. Versioning \& Compatibility
+## 16\. Versioning \& Compatibility
 
 
 
@@ -560,7 +527,7 @@ Wire contract stability is a hard requirement
 
 
 
-17\. Security Considerations
+## 17\. Security Considerations
 
 
 
@@ -580,7 +547,7 @@ Observability hooks should be enabled in regulated environments
 
 
 
-18\. Future Work (Non-Normative)
+## 18\. Future Work (Non-Normative)
 
 
 
@@ -608,7 +575,7 @@ Tool composition
 
 
 
-19\. Conclusion
+## 19\. Conclusion
 
 
 
